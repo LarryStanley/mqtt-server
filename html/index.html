@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="arklab">
+<head>
+	<meta charset="UTF-8">
+	<title>ArkLab 感測儀表板</title>
+
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.3.0/css/material-fullpalette.min.css">
+
+
+</head>
+<style>
+	@font-face {
+		font-family: HelveticaNeue;
+		src: url(HelveticaNeue-UltraLight.otf);
+	}
+
+	html, body {
+		height: 100%;
+		width: 100%;		
+		
+		font-family: Helvetica, Arial, "微軟正黑體", "微软雅黑", "メイリオ", "맑은 고딕", sans-serif;
+
+		background: #4B79A1; /* fallback for old browsers */
+		background: -webkit-linear-gradient(to left, #4B79A1 , #283E51); /* Chrome 10-25, Safari 5.1-6 */
+		background: linear-gradient(to left, #4B79A1 , #283E51); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+        
+        color: white;
+	}
+
+	.number {
+		font-family: HelveticaNeue;
+		font-size: 64px;
+		text-align: center;
+	}
+	.unit {
+		font-family: HelveticaNeue;
+		font-size: 18px;
+	}
+
+	.map {
+	    width: 100%;
+	    height: 300px;
+	}
+</style>
+<body ng-controller="ArklabController as arklab">
+	<div class="container">
+		<h1>ArkLab 感測儀表板</h1>
+		<div class="row">
+			<div class="col-md-4">
+				<div class="well">
+					<h2>PM 2.5</h2>
+					<div class="number">
+						{{ arklab.data.pm }}
+						<span class="unit">
+							μg/m<sup>3</sup>
+						</span>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-4">
+				<div class="well">
+					<h2>濕度</h2>
+					<div class="number">
+						{{ arklab.data.wet }}
+					</div>
+				</div>
+			</div>
+			<div class="col-md-4">
+				<div class="well">
+					<h2>水質</h2>
+					<div class="number">
+						{{ arklab.data.water }}
+					</div>
+				</div>
+			</div>
+			<div class="col-md-4">
+				<div class="well">
+					<h2>飛行資訊</h2>
+					<ul>
+						<li>高度：{{ arklab.data.height }}m</li>
+						<li>電壓：{{ arklab.data.voltage }}V</li>
+						<li>模式：回航</li>
+						<li>衛星數量：{{ arklab.data.satellite }}顆</li>
+						<li>水平速度：{{ arklab.data.speed }}m/s</li>	
+					</ul>
+				</div>
+			</div>
+			<div class="col-md-8">
+				<div class="well">
+					<h2>位置</h2>
+					<div class="map"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+<script src="jquery.tinyMap.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+<script>
+	var socket = io.connect('http://arklab.ncufood.info:9001');
+
+	angular.module('arklab', [])
+		.controller('ArklabController', function($scope, $http) {
+			var arklab = this;
+			arklab.data = {
+				pm: 0,
+				wet: 0,
+				water: 0,
+				height: 0,
+				voltage: 0,
+				satellite: 0,
+				speed: 0,
+				location: ['25.039065815333753', '121.56097412109375']
+			}
+
+			$('.map').tinyMap({
+			    'center': arklab.data.location,
+			    'zoom'  : 14,
+			    'marker': [
+			    	{'addr': arklab.data.location}
+			    ]
+			});
+
+			socket.on('arklab', function(data){
+				console.log(data);
+                arklab.data = JSON.parse(data);
+                $scope.$apply();
+                $('.map').tinyMap('clear');
+                $('.map').tinyMap('panTo', arklab.data.location);
+                $('.map').tinyMap('modify', {
+				    'marker': [
+				       {'addr': arklab.data.location}
+				    ]
+				});
+			});
+
+		});
+</script>
+</html>
